@@ -11,12 +11,6 @@
 
 ## 快速开始
 
-### 安装
-
-```bash
-conda activate parenting_kb
-pip install -e .
-```
 
 ### 启动导入服务（端口 8000）
 
