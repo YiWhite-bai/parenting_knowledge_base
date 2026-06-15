@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>育儿知识助手 · 智能问答</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",sans-serif;background:#fffaf5;color:#4a3728;height:100vh;display:flex;flex-direction:column}
+.nav{display:flex;align-items:center;justify-content:space-between;padding:16px 28px;border-bottom:1px solid #f0e8dd;background:#fffbff;flex-shrink:0}
+.nav .logo{font-size:18px;font-weight:700;color:#c77d5a}
+.nav a{color:#b09b8b;text-decoration:none;font-size:13px;margin-left:24px;transition:color .2s}
+.nav a:hover,.nav a.active{color:#c77d5a}
+.chat-wrap{flex:1;max-width:780px;width:100%;margin:0 auto;display:flex;flex-direction:column;overflow:hidden;padding:0 16px}
+.msgs{flex:1;overflow-y:auto;padding:20px 0}
+.msg{display:flex;gap:10px;margin-bottom:20px}
+.msg.user{flex-direction:row-reverse}
+.avt{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.msg.user .avt{background:#fef3e4}
+.msg.assistant .avt{background:#f0ebf8}
+.bbl{max-width:72%;padding:14px 18px;border-radius:14px;font-size:14px;line-height:1.75;white-space:pre-wrap;word-break:break-word}
+.msg.user .bbl{background:#c77d5a;color:#fff;border-bottom-right-radius:4px}
+.msg.assistant .bbl{background:#fff;border:1px solid #f0e8dd;border-bottom-left-radius:4px}
+.msg.assistant .bbl .srcs{font-size:12px;color:#b09b8b;margin-top:10px;padding-top:10px;border-top:1px solid #f5f0eb}
+.think-wrap{margin-bottom:10px}
+.think-wrap summary{font-size:12px;color:#b09b8b;cursor:pointer;user-select:none;padding:6px 10px;border-radius:8px;background:#fdfaf6;border:1px dashed #e8ddd0;transition:all .2s}
+.think-wrap summary:hover{color:#c77d5a;border-color:#c77d5a}
+.think-wrap[open] summary{margin-bottom:6px}
+.think-list{font-size:12px;color:#9b8b7b;padding:4px 8px}
+.think-list .think-item{display:flex;align-items:flex-start;gap:6px;padding:2px 0}
+.think-list .think-item::before{content:'🧠';flex-shrink:0;font-size:11px}
+.typing{display:flex;gap:4px;padding:4px 0}
+.typing span{width:6px;height:6px;border-radius:50%;background:#d5c5b8;animation:dot 1.4s infinite}
+.typing span:nth-child(2){animation-delay:.2s}
+.typing span:nth-child(3){animation-delay:.4s}
+@keyframes dot{0%,100%{opacity:.2}50%{opacity:1}}
+.foot{flex-shrink:0;padding:14px 0;border-top:1px solid #f0e8dd;background:#fffaf5}
+.foot-row{display:flex;gap:10px;align-items:center}
+.foot input{flex:1;padding:12px 18px;border:1px solid #e8ddd0;border-radius:24px;font-size:14px;background:#fff;color:#4a3728;outline:none;transition:all .2s}
+.foot input:focus{border-color:#c77d5a;box-shadow:0 0 0 3px rgba(199,125,90,.06)}
+.foot button{width:42px;height:42px;border-radius:50%;border:none;background:#c77d5a;color:#fff;font-size:16px;cursor:pointer;flex-shrink:0;transition:all .2s}
+.foot button:hover{background:#b56a48}
+.foot button:disabled{background:#d5c5b8;cursor:not-allowed}
+.foot-extras{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
+.foot-extras label{font-size:12px;color:#b09b8b;display:flex;align-items:center;gap:4px;cursor:pointer}
+.foot-extras label input{accent-color:#c77d5a}
+.foot-extras button{font-size:12px;color:#c0b0a0;background:none;border:none;cursor:pointer;transition:color .2s}
+.foot-extras button:hover{color:#c06050}
+</style>
+</head>
+<body>
+<nav class="nav">
+    <div class="logo">🤱 育儿知识助手</div>
+    <div>
+    </div>
+</nav>
+
+<div class="chat-wrap">
+    <div class="msgs" id="msgs">
+        <div class="msg assistant">
+            <div class="avt">🧸</div>
+            <div class="bbl">你好呀～我是你的育儿知识助手！<br><br>试试问我这些问题：<br>• 3-6岁孩子发脾气该怎么办？<br>• 孩子挑食有什么好办法？<br>• 手足之间总是抢东西怎么办？<br>• 怎样提升孩子的专注力？</div>
+        </div>
+    </div>
+
+    <div class="foot">
+        <div class="foot-row">
+            <input type="text" id="inp" placeholder="说说你的育儿困惑…" onkeydown="if(event.key==='Enter')go()">
+            <button onclick="go()" id="btnSend">➤</button>
+        </div>
+        <div class="foot-extras">
+            <label><input type="checkbox" id="chkStream" checked> 实时流式</label>
+            <button onclick="wipe()">清除历史</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const BASE='';
+let sid='sess_'+Date.now();
+let es=null;
+
+async function go(){
+    const q=document.getElementById('inp').value.trim();
+    if(!q)return;
+    addMsg('user',q);
+    document.getElementById('inp').value='';
+    document.getElementById('btnSend').disabled=true;
+
+    if(document.getElementById('chkStream').checked) await streamGo(q);
+    else await plainGo(q);
+
+    document.getElementById('btnSend').disabled=false;
+    document.getElementById('inp').focus();
+}
+
+async function plainGo(q){
+    const el=addMsg('assistant','',true);
+    el.querySelector('.bbl').innerHTML='<div class="typing"><span></span><span></span><span></span></div>';
+    try{
+        const r=await fetch(`${BASE}/query`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q,session_id:sid,is_stream:false})});
+        const d=await r.json();
+        let t=d.answer||d.error||'未能获取回答';
+        if(d.reranked_docs?.length)t+=`<div class="srcs">📖 参考了 ${d.reranked_docs.length} 篇育儿资料</div>`;
+        el.querySelector('.bbl').innerHTML=t;
+    }catch(e){el.querySelector('.bbl').innerHTML='请求失败: '+e.message}
+}
+
+async function streamGo(q){
+    const el=addMsg('assistant','',true);
+    el.querySelector('.bbl').innerHTML='<div class="typing"><span></span><span></span><span></span></div>';
+    try{
+        const r1=await fetch(`${BASE}/query`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q,session_id:sid,is_stream:true})});
+        const d1=await r1.json();
+        const tid=d1.task_id;
+        if(es)es.close();
+        es=new EventSource(`${BASE}/stream/${tid}`);
+        let first=true;
+
+        // 思考过程（预先插入，实时显示）
+        const thinkWrap=document.createElement('details');
+        thinkWrap.className='think-wrap';
+        thinkWrap.open=true;
+        const thinkSum=document.createElement('summary');
+        thinkSum.textContent='🧠 思考过程';
+        thinkWrap.appendChild(thinkSum);
+        const thinkList=document.createElement('div');
+        thinkList.className='think-list';
+        thinkWrap.appendChild(thinkList);
+
+        es.addEventListener('thinking',e=>{
+            const p=JSON.parse(e.data);
+            const item=document.createElement('div');
+            item.className='think-item';
+            item.textContent=p.message;
+            thinkList.appendChild(item);
+            // 首次思考事件到达时，立即替换显示
+            if(first){
+                el.querySelector('.bbl').innerHTML='';
+                el.querySelector('.bbl').appendChild(thinkWrap);
+                first=false;
+            }
+            document.getElementById('msgs').scrollTop=document.getElementById('msgs').scrollHeight;
+        });
+
+        es.addEventListener('delta',e=>{
+            const p=JSON.parse(e.data);
+            if(first){
+                el.querySelector('.bbl').innerHTML='';
+                el.querySelector('.bbl').appendChild(thinkWrap);
+                first=false;
+            }
+            const bbl=el.querySelector('.bbl');
+            const txt=document.createTextNode(p.delta);
+            bbl.appendChild(txt);
+            document.getElementById('msgs').scrollTop=document.getElementById('msgs').scrollHeight;
+        });
+
+        es.addEventListener('final',()=>{
+            es.close();es=null;
+        });
+        es.onerror=()=>{es?.close();es=null};
+    }catch(e){el.querySelector('.bbl').innerHTML='请求失败: '+e.message}
+}
+
+function addMsg(role,txt,placeholder=false){
+    const c=document.getElementById('msgs');
+    const d=document.createElement('div');
+    d.className='msg '+role;
+    d.innerHTML=`<div class="avt">${role==='user'?'👤':'🧸'}</div><div class="bbl">${txt}</div>`;
+    c.appendChild(d);
+    c.scrollTop=c.scrollHeight;
+    return d;
+}
+
+async function wipe(){
+    if(!confirm('确认清除对话历史？'))return;
+    try{await fetch(`${BASE}/history/${sid}`,{method:'DELETE'})}catch(e){}
+    document.getElementById('msgs').innerHTML='';
+    addMsg('assistant','对话历史已清除，有什么可以帮你的？');
+    sid='sess_'+Date.now();
+}
+</script>
+</body>
+</html>

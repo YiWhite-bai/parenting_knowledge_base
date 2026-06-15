@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+pydantic>=2.0
+python-dotenv
+minio
+langchain-openai
+langgraph
+pymilvus[milvus_lite]
+pymilvus[model]
+sentence-transformers
+pymongo
+mineru[all]

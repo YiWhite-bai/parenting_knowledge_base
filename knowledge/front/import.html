@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>育儿知识库 · 数据导入</title>
+<style>
+:root{
+    --bg:#fffaf5;
+    --card-bg:#fff;
+    --border:#f0e8dd;
+    --text:#4a3728;
+    --muted:#b09b8b;
+    --accent:#c77d5a;
+    --accent2:#e8a860;
+    --green:#5a8a5a;
+    --red:#c06050;
+    --blue:#6b8fbf;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.nav{display:flex;align-items:center;justify-content:space-between;padding:18px 32px;border-bottom:1px solid var(--border);background:#fffbff}
+.nav .logo{font-size:20px;font-weight:700;color:var(--accent)}
+.nav a{color:var(--muted);text-decoration:none;font-size:13px;margin-left:24px;transition:color .2s}
+.nav a:hover,.nav a.active{color:var(--accent)}
+.container{max-width:1040px;margin:0 auto;padding:24px 16px 40px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+.stat-card{background:var(--card-bg);border:1px solid var(--border);border-radius:14px;padding:18px 20px}
+.stat-label{font-size:12px;color:var(--muted);margin-bottom:6px}
+.stat-value{font-size:28px;font-weight:700;color:var(--accent)}
+.upload-zone{display:block;border:2px dashed #e0ccc0;border-radius:16px;padding:48px 28px;text-align:center;cursor:pointer;transition:all .25s;background:var(--card-bg);margin-bottom:24px}
+.upload-zone:hover,.upload-zone.dragover{border-color:var(--accent);background:#fef9f5;box-shadow:0 8px 28px rgba(199,125,90,.08)}
+.upload-zone .icon{font-size:48px;margin-bottom:12px}
+.upload-zone h3{font-size:18px;color:var(--text);margin-bottom:6px}
+.upload-zone p{font-size:13px;color:var(--muted);line-height:1.6}
+.upload-zone input[type=file]{display:none}
+.dir-section{margin-top:24px;padding-top:24px;border-top:1px solid var(--border)}
+.dir-section h4{font-size:14px;color:var(--text);margin-bottom:12px}
+.dir-row{display:flex;gap:10px}
+.dir-row input{flex:1;padding:10px 14px;border:1px solid var(--border);border-radius:10px;font-size:13px;background:#fefcf9;outline:none}
+.dir-row input:focus{border-color:var(--accent)}
+.dir-row button{padding:10px 20px;border:none;border-radius:10px;background:var(--accent);color:#fff;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap}
+.dir-row button:hover{background:#b56a48}
+.file-list{display:flex;flex-direction:column;gap:16px}
+.file-card{background:var(--card-bg);border:1px solid var(--border);border-radius:16px;padding:22px;display:flex;justify-content:space-between;align-items:flex-start;gap:16px;transition:all .2s}
+.file-card:hover{box-shadow:0 4px 18px rgba(0,0,0,.04)}
+.file-card.status-running{border-color:#e0d0b8;box-shadow:0 0 0 3px rgba(199,125,90,.06)}
+.file-card.status-done{border-color:#c8dcc8}
+.file-card.status-err{border-color:#e8c8c0}
+.file-info{flex:1;min-width:0}
+.file-meta{display:flex;gap:8px;margin-bottom:10px}
+.file-chip{font-size:11px;padding:2px 10px;border-radius:10px;background:#f5f0eb;color:var(--muted)}
+.file-name{font-size:15px;font-weight:600;color:var(--text);word-break:break-all;margin-bottom:4px}
+.file-size{font-size:12px;color:var(--muted)}
+.badge{font-size:12px;font-weight:600;padding:6px 14px;border-radius:12px;min-width:80px;text-align:center;flex-shrink:0}
+.badge-checking{background:#fef3e4;color:var(--accent2)}
+.badge-uploading{background:#fef3e4;color:var(--accent2)}
+.badge-running{background:#e8f0fa;color:var(--blue)}
+.badge-done{background:#eef6ee;color:var(--green)}
+.badge-err{background:#fdf0ee;color:var(--red)}
+.badge-skip{background:#f5f0eb;color:var(--muted)}
+.progress-wrap{margin-top:12px}
+.progress-bar{height:6px;background:#f0e8dd;border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;border-radius:3px;transition:width .4s}
+.progress-text{font-size:11px;color:var(--muted);margin-top:4px;text-align:right}
+.log-block{margin-top:14px}
+.log-block summary{font-size:13px;color:var(--text);cursor:pointer;font-weight:500}
+.log-block summary:hover{color:var(--accent)}
+.log-list{margin:8px 0 0;padding:0;list-style:none;max-height:200px;overflow-y:auto;font-size:12px}
+.log-list li{padding:6px 10px;display:flex;align-items:center;gap:8px;border-radius:6px}
+.log-list li:hover{background:#fefcf9}
+.log-list .log-done{color:var(--green)}
+.log-list .log-done::before{content:'✅';font-size:11px}
+.log-list .log-running{color:var(--blue)}
+.log-list .log-running::before{content:'🔄';font-size:11px}
+.log-list .log-err{color:var(--red)}
+.log-list .log-err::before{content:'❌';font-size:11px}
+.log-duration{margin-left:auto;font-size:11px;color:var(--accent);background:#fef3e4;padding:1px 10px;border-radius:8px;white-space:nowrap}
+.empty-state{text-align:center;padding:40px 20px;color:var(--muted);font-size:14px}
+@media(max-width:768px){.stats{grid-template-columns:repeat(2,1fr)}.nav{padding:14px 16px}.file-card{flex-direction:column}}
+</style>
+</head>
+<body>
+<nav class="nav">
+    <div class="logo">🍼 育儿知识库</div>
+</nav>
+
+<div class="container">
+    <div class="stats">
+        <div class="stat-card"><div class="stat-label">总任务</div><div class="stat-value" id="sTotal">0</div></div>
+        <div class="stat-card"><div class="stat-label">处理中</div><div class="stat-value" id="sRunning">0</div></div>
+        <div class="stat-card"><div class="stat-label">已完成</div><div class="stat-value" id="sDone">0</div></div>
+        <div class="stat-card"><div class="stat-label">失败</div><div class="stat-value" id="sFail">0</div></div>
+    </div>
+
+    <!-- 拖拽上传区 -->
+    <label class="upload-zone" id="dropZone">
+        <div class="icon">📂</div>
+        <h3>拖拽或点击上传育儿知识文件</h3>
+        <p>支持 PDF / Markdown 文件<br>每个文件将自动提取元数据、向量化并存入知识库</p>
+        <input type="file" id="fileInput" accept=".pdf,.md" multiple>
+    </label>
+
+    <!-- 目录批量导入（辅助） -->
+    <div class="dir-section">
+        <h4>📁 或直接指定目录批量导入</h4>
+        <div class="dir-row">
+            <input type="text" id="txtDir" placeholder="D:\育儿\数据" value="D:\育儿\数据">
+            <button onclick="doDirImport()">批量导入目录</button>
+        </div>
+        <div id="dirMsg" style="margin-top:8px;font-size:13px;"></div>
+    </div>
+
+    <div style="margin-top:28px">
+        <h4 style="font-size:14px;color:var(--text);margin-bottom:14px">导入任务面板</h4>
+        <div id="emptyState" class="empty-state">还没有导入任务，拖拽文件或选择目录开始</div>
+        <div class="file-list" id="fileList"></div>
+    </div>
+</div>
+
+<script>
+const BASE='';
+const cards=new Map();
+const dropZone=document.getElementById('dropZone');
+const fileInput=document.getElementById('fileInput');
+
+dropZone.addEventListener('dragover',e=>{e.preventDefault();dropZone.classList.add('dragover')});
+dropZone.addEventListener('dragleave',()=>dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop',e=>{e.preventDefault();dropZone.classList.remove('dragover');handleFiles(e.dataTransfer.files)});
+fileInput.addEventListener('change',e=>{handleFiles(e.target.files);fileInput.value=''});
+
+function refreshDash(){
+    const all=Array.from(cards.values());
+    document.getElementById('sTotal').textContent=all.length;
+    document.getElementById('sRunning').textContent=all.filter(c=>['checking','uploading','processing'].includes(c.status)).length;
+    document.getElementById('sDone').textContent=all.filter(c=>['completed','skipped'].includes(c.status)).length;
+    document.getElementById('sFail').textContent=all.filter(c=>c.status==='error').length;
+    document.getElementById('emptyState').style.display=all.length===0?'block':'none';
+}
+
+function setCardStatus(id,status,text){
+    const card=cards.get(id);if(!card)return;
+    card.status=status;
+    const el=document.getElementById(id);if(!el)return;
+    const map={checking:'badge-checking',uploading:'badge-uploading',processing:'badge-running',completed:'badge-done',skipped:'badge-skip',error:'badge-err'};
+    const clsMap={processing:'status-running',completed:'status-done',error:'status-err'};
+    const badge=el.querySelector('.status-badge');
+    badge.textContent=text;badge.className='badge status-badge '+(map[status]||'badge-checking');
+    el.className='file-card';
+    if(clsMap[status])el.classList.add(clsMap[status]);
+    refreshDash();
+}
+
+function formatDur(s){if(s<60)return s.toFixed(1)+'s';const m=Math.floor(s/60);return m+'m'+(s%60).toFixed(0)+'s'}
+
+function handleFiles(files){Array.from(files).forEach(uploadOne)}
+
+async function uploadOne(file){
+    const isPDF=file.name.toLowerCase().endsWith('.pdf');
+    const totalNodes=isPDF?6:5;
+    const id='card-'+Math.random().toString(36).substr(2,8);
+    const kb=(file.size/1024).toFixed(1);
+
+    const html=`
+    <div class="file-card" id="${id}">
+        <div class="file-info">
+            <div class="file-meta">
+                <span class="file-chip">${isPDF?'📄 PDF':'📝 MD'}</span>
+                <span class="file-chip">${totalNodes} 个阶段</span>
+            </div>
+            <div class="file-name">${file.name}</div>
+            <div class="file-size">${kb} KB</div>
+            <div class="progress-wrap">
+                <div class="progress-bar"><div class="progress-fill" style="width:0%;background:var(--accent)"></div></div>
+                <div class="progress-text">0%</div>
+            </div>
+            <details class="log-block" open>
+                <summary>📋 运行日志</summary>
+                <ul class="log-list"></ul>
+            </details>
+        </div>
+        <div class="badge badge-checking status-badge">检查中</div>
+    </div>`;
+    document.getElementById('fileList').insertAdjacentHTML('afterbegin',html);
+    cards.set(id,{status:'checking',fileName:file.name,totalNodes});
+    refreshDash();
+
+    const el=document.getElementById(id);
+    const logList=el.querySelector('.log-list');
+    const progressFill=el.querySelector('.progress-fill');
+    const progressText=el.querySelector('.progress-text');
+
+    function addLog(msg,cls=''){const li=document.createElement('li');li.textContent=msg;if(cls)li.className=cls;logList.appendChild(li);logList.scrollTop=logList.scrollHeight}
+    function updProg(pct){const v=Math.min(Math.max(pct,0),100);progressFill.style.width=v+'%';progressText.textContent=Math.round(v)+'%';if(v>=100)progressFill.style.background='var(--green)';else if(v>0)progressFill.style.background='var(--accent)'}
+
+    addLog('正在上传文件...');
+    setCardStatus(id,'uploading','上传中');
+    updProg(10);
+
+    try{
+        const form=new FormData();form.append('file',file);
+        const res=await fetch(`${BASE}/upload`,{method:'POST',body:form});
+        if(!res.ok){const e=await res.text();throw new Error(e)}
+        const data=await res.json();
+        const tid=data.task_id;
+        addLog(`任务创建: ${tid}`);
+        setCardStatus(id,'processing','处理中');
+        updProg(15);
+
+        // 轮询状态
+        const poll=setInterval(async()=>{
+            try{
+                const r=await fetch(`${BASE}/status/${tid}?_=${Date.now()}`,{cache:'no-store'});
+                if(!r.ok){addLog(`状态查询 HTTP ${r.status}`,'log-err');return}
+                const d=await r.json();
+                const done=d.done_list||[];
+                const running=d.running_list||[];
+                const dur=d.durations||{};
+
+                logList.innerHTML='';
+                for(const item of done){
+                    if(item==='上传文件')continue;
+                    const li=document.createElement('li');li.className='log-done';
+                    const sp=document.createElement('span');sp.textContent=`${item} 节点完成`;
+                    li.appendChild(sp);
+                    if(dur[item]!==undefined){const ds=document.createElement('span');ds.className='log-duration';ds.textContent=formatDur(dur[item]);li.appendChild(ds)}
+                    logList.appendChild(li);
+                }
+                for(const item of running){
+                    const li=document.createElement('li');li.className='log-running';li.textContent=`正在处理 ${item} 节点...`;logList.appendChild(li);
+                }
+                logList.scrollTop=logList.scrollHeight;
+
+                let pct=(done.length/totalNodes)*100;
+                if(running.length>0)pct+=(0.5/totalNodes)*100;
+                updProg(Math.min(pct,95));
+                setCardStatus(id,'processing','处理中');
+
+                if(d.status==='completed'){
+                    clearInterval(poll);setCardStatus(id,'completed','已完成');updProg(100);
+                }else if(d.status==='failed'){
+                    clearInterval(poll);setCardStatus(id,'error','失败');
+                    const li=document.createElement('li');li.className='log-err';li.textContent=`失败: ${d.error||'未知错误'}`;logList.appendChild(li);
+                }
+            }catch(e){addLog(`轮询异常: ${e.message}`,'log-err')}
+        },1500);
+    }catch(e){
+        setCardStatus(id,'error','失败');
+        addLog(`❌ ${e.message}`,'log-err');
+    }
+}
+
+async function doDirImport(){
+    const dir=document.getElementById('txtDir').value.trim();
+    if(!dir)return document.getElementById('dirMsg').innerHTML='<span style="color:var(--red)">请输入目录路径</span>';
+    document.getElementById('dirMsg').innerHTML='<span style="color:var(--blue)">正在导入...</span>';
+
+    const id='dir-'+Math.random().toString(36).substr(2,8);
+    const html=`
+    <div class="file-card" id="${id}">
+        <div class="file-info">
+            <div class="file-meta"><span class="file-chip">📁 目录导入</span></div>
+            <div class="file-name">${dir}</div>
+            <div class="progress-wrap">
+                <div class="progress-bar"><div class="progress-fill" style="width:0%;background:var(--accent)"></div></div>
+                <div class="progress-text">0%</div>
+            </div>
+            <details class="log-block" open>
+                <summary>📋 运行日志</summary>
+                <ul class="log-list"></ul>
+            </details>
+        </div>
+        <div class="badge badge-running status-badge">处理中</div>
+    </div>`;
+    document.getElementById('fileList').insertAdjacentHTML('afterbegin',html);
+    cards.set(id,{status:'processing',fileName:dir,totalNodes:1});
+    refreshDash();
+
+    try{
+        const res=await fetch(`${BASE}/import/directory`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({source_dir:dir})});
+        const data=await res.json();
+        if(res.ok){
+            setCardStatus(id,'processing','处理中');
+            document.getElementById('dirMsg').innerHTML=`<span style="color:var(--blue)">⏳ ${data.message}</span>`;
+            const card=document.getElementById(id);
+            const fill=card.querySelector('.progress-fill');
+            const text=card.querySelector('.progress-text');
+            const logList=card.querySelector('.log-list');
+
+            // 轮询状态
+            const poll=setInterval(async()=>{
+                const r=await fetch(`${BASE}/status/${data.task_id}`);
+                const d=await r.json();
+                const total=d.total_files||0;
+                const imported=d.imported_count||0;
+                const skipped=d.skipped_count||0;
+                const processed=imported+skipped;
+                const pct=total?Math.round((processed/total)*100):15;
+                fill.style.width=Math.min(pct,95)+'%';
+                text.textContent=`${processed}/${total||'?'} (${pct}%)`;
+                logList.innerHTML=[
+                    `<li>总文件: ${total||'扫描中'}，成功: ${imported}，跳过/失败: ${skipped}</li>`,
+                    d.current_file?`<li>当前: ${d.current_file}</li>`:'',
+                    ...(d.errors||[]).slice(-5).map(e=>`<li class="log-err">${e}</li>`)
+                ].join('');
+                if(d.status==='completed'||d.status==='failed'){
+                    clearInterval(poll);
+                    setCardStatus(id,d.status==='completed'?'completed':'error',d.status==='completed'?'已完成':'失败');
+                    fill.style.width='100%';
+                    text.textContent=`${processed}/${total||processed} (100%)`;
+                    document.getElementById('dirMsg').innerHTML=d.status==='completed'
+                        ?`<span style="color:var(--green)">✅ 导入完成：成功 ${imported}/${total}，跳过/失败 ${skipped}</span>`
+                        :`<span style="color:var(--red)">❌ 导入失败：${d.error||'请查看日志'}</span>`;
+                }
+            },2000);
+        }else{
+            setCardStatus(id,'error','失败');
+            document.getElementById('dirMsg').innerHTML=`<span style="color:var(--red)">❌ ${data.detail||'导入失败'}</span>`;
+        }
+    }catch(e){
+        setCardStatus(id,'error','失败');
+        document.getElementById('dirMsg').innerHTML=`<span style="color:var(--red)">❌ ${e.message}</span>`;
+    }
+}
+
+refreshDash();
+</script>
+</body>
+</html>

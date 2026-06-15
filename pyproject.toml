@@ -1,0 +1,28 @@
+[project]
+name = "parenting-knowledge-base"
+version = "0.2.0"
+description = "智能育儿知识库系统"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "pydantic>=2.0",
+    "python-multipart",
+    "python-dotenv",
+    "minio",
+    "langchain-openai",
+    "langchain-text-splitters",
+    "langgraph",
+    "pymilvus[milvus_lite]",
+    "pymilvus[model]",
+    "sentence-transformers",
+    "FlagEmbedding",
+    "beautifulsoup4",
+    "pymongo",
+    "mineru[all]",
+]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
